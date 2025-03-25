@@ -6,14 +6,15 @@ import (
 )
 
 type HttpRequest struct {
+	HttpVersion string
 	Method      string
 	Path        string
-	HttpVersion string
+	PathParams  map[string]string
 	Headers     map[string]string
 	Body        string
 }
 
-func ParseRequest(data []byte) (*HttpRequest, error) {
+func ParseHttpRequest(data []byte) (*HttpRequest, error) {
 	requestString := string(data)
 	lines := strings.Split(requestString, "\r\n")
 	if len(lines) == 0 {
@@ -51,20 +52,24 @@ func ParseRequest(data []byte) (*HttpRequest, error) {
 		body = strings.Join(lines[i+1:], "\r\n")
 	}
 
+	pathParams := make(map[string]string)
+
 	return NewRequest(
+		httpVersion,
 		method,
 		path,
-		httpVersion,
+		pathParams,
 		headers,
 		body,
 	), nil
 }
 
-func NewRequest(method string, path string, httpVersion string, headers map[string]string, body string) *HttpRequest {
+func NewRequest(httpVersion string, method string, path string, pathParams map[string]string, headers map[string]string, body string) *HttpRequest {
 	return &HttpRequest{
+		HttpVersion: httpVersion,
 		Method:      method,
 		Path:        path,
-		HttpVersion: httpVersion,
+		PathParams:  pathParams,
 		Headers:     headers,
 		Body:        body,
 	}

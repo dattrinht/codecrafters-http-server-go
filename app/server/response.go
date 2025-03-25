@@ -34,7 +34,7 @@ type HttpResponse struct {
 	Body        string
 }
 
-func (r *HttpResponse) ToString() (string, error) {
+func (r *HttpResponse) Stringify() (string, error) {
 	statusMsg, ok := STATUS_CODE_TO_MESSAGE[r.StatusCode]
 	if !ok {
 		return "", errors.New("invalid status code")
@@ -43,7 +43,15 @@ func (r *HttpResponse) ToString() (string, error) {
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("%s %d %s\r\n", r.HttpVersion, r.StatusCode, statusMsg))
 
+	if len(r.Headers) > 0 {
+		for key, value := range r.Headers {
+			sb.WriteString(fmt.Sprintf("%s: %s\r\n", key, value))
+		}
+	}
+
 	sb.WriteString("\r\n")
+
+	sb.WriteString(r.Body)
 
 	return sb.String(), nil
 }

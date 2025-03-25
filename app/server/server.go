@@ -6,7 +6,21 @@ import (
 	"os"
 )
 
-func Start(port string) {
+type Server struct {
+	routes map[string]func(*HttpRequest) *HttpResponse
+}
+
+func NewServer() *Server {
+	return &Server{
+		routes: make(map[string]func(*HttpRequest) *HttpResponse),
+	}
+}
+
+func (s *Server) Handle(path string, handler func(*HttpRequest) *HttpResponse) {
+	s.routes[path] = handler
+}
+
+func (s *Server) Listen(port string) {
 	l, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", port))
 	if err != nil {
 		fmt.Printf("Failed to bind to port %s\n", port)
@@ -19,14 +33,14 @@ func Start(port string) {
 		os.Exit(1)
 	}
 
-	_, err = HandleConn(conn)
+	_, err = s.HandleConn(conn)
 	if err != nil {
 		fmt.Println("Failed to handle connection: ", err.Error())
 		os.Exit(1)
 	}
 }
 
-func HandleConn(c net.Conn) (int, error) {
+func (s *Server) HandleConn(c net.Conn) (int, error) {
 	defer c.Close()
 
 	buffer := make([]byte, 1024)
@@ -35,21 +49,24 @@ func HandleConn(c net.Conn) (int, error) {
 		return r, err
 	}
 
-	req, err := ParseRequest(buffer)
+	req, err := ParseHttpRequest(buffer)
 	if err != nil {
 		return r, err
 	}
 
-	res := HttpResponse{
-		HttpVersion: req.HttpVersion,
-	}
-	if req.Path == "/" {
-		res.StatusCode = 200
+	route := NewRoute(s.routes)
+	handler, ok := route.Match(req)
+	var res *HttpResponse
+	if !ok {
+		res = &HttpResponse{
+			StatusCode:  404,
+			HttpVersion: req.HttpVersion,
+		}
 	} else {
-		res.StatusCode = 404
+		res = handler(req)
 	}
 
-	message, err := res.ToString()
+	message, err := res.Stringify()
 	if err != nil {
 		return r, err
 	}
