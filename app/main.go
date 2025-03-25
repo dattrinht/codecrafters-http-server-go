@@ -29,5 +29,18 @@ func main() {
 		}
 	})
 
+	s.Handle("/user-agent", func(req *server.HttpRequest) *server.HttpResponse {
+		userAgent := req.Headers["User-Agent"]
+		return &server.HttpResponse{
+			StatusCode:  200,
+			HttpVersion: req.HttpVersion,
+			Body:        userAgent,
+			Headers: map[string]string{
+				"Content-Type":   "text/plain",
+				"Content-Length": strconv.Itoa(len(userAgent)),
+			},
+		}
+	})
+
 	s.Listen("4221")
 }
