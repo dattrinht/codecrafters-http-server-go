@@ -27,17 +27,27 @@ func (s *Server) Listen(port string) {
 		os.Exit(1)
 	}
 
-	conn, err := l.Accept()
-	if err != nil {
-		fmt.Println("Error accepting connection: ", err.Error())
-		os.Exit(1)
+	tp := NewThreadPool(10)
+	tp.Start()
+
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			fmt.Println("Error accepting connection: ", err.Error())
+			break
+		}
+
+		tp.Submit(func() {
+			go func(c net.Conn) {
+				_, err := s.HandleConn(c)
+				if err != nil {
+					fmt.Println("Failed to handle connection: ", err.Error())
+				}
+			}(conn)
+		})
 	}
 
-	_, err = s.HandleConn(conn)
-	if err != nil {
-		fmt.Println("Failed to handle connection: ", err.Error())
-		os.Exit(1)
-	}
+	tp.Stop()
 }
 
 func (s *Server) HandleConn(c net.Conn) (int, error) {
