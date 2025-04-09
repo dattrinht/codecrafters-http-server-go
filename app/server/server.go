@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 )
 
 type Server struct {
@@ -77,8 +78,14 @@ func (s *Server) HandleConn(c net.Conn) (int, error) {
 		res = handler(req)
 	}
 
-	if res.StatusCode == 200 && req.Headers["Accept-Encoding"] == "gzip" {
-		res.Headers["Content-Encoding"] = "gzip"
+	if res.StatusCode == 200 {
+		encodings := strings.SplitSeq(req.Headers["Accept-Encoding"], ",")
+		for encoding := range encodings {
+			if strings.TrimSpace(encoding) == "gzip" {
+				res.Headers["Content-Encoding"] = "gzip"
+				break
+			}
+		}
 	}
 
 	message, err := res.Stringify()
