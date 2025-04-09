@@ -77,6 +77,10 @@ func (s *Server) HandleConn(c net.Conn) (int, error) {
 		res = handler(req)
 	}
 
+	if res.StatusCode == 200 && req.Headers["Accept-Encoding"] == "gzip" {
+		res.Headers["Content-Encoding"] = "gzip"
+	}
+
 	message, err := res.Stringify()
 	if err != nil {
 		return r, err
