@@ -1,9 +1,12 @@
 package server
 
 import (
+	"bytes"
+	"compress/gzip"
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -82,7 +85,16 @@ func (s *Server) HandleConn(c net.Conn) (int, error) {
 		encodings := strings.SplitSeq(req.Headers["Accept-Encoding"], ",")
 		for encoding := range encodings {
 			if strings.TrimSpace(encoding) == "gzip" {
+				var buf bytes.Buffer
+
+				gz := gzip.NewWriter(&buf)
+				gz.Write([]byte(res.Body))
+				gz.Close()
+
+				res.Body = buf.String()
+				res.Headers["Content-Length"] = strconv.Itoa(len(res.Body))
 				res.Headers["Content-Encoding"] = "gzip"
+
 				break
 			}
 		}
