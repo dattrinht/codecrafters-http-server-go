@@ -16,8 +16,10 @@ func NewServer() *Server {
 	}
 }
 
-func (s *Server) Handle(path string, handler func(*HttpRequest) *HttpResponse) {
-	s.routes[path] = handler
+var route = NewRoute()
+
+func (s *Server) Handle(method string, path string, handler func(*HttpRequest) *HttpResponse) {
+	route.AddRoute(method, path, handler)
 }
 
 func (s *Server) Listen(port string) {
@@ -64,7 +66,6 @@ func (s *Server) HandleConn(c net.Conn) (int, error) {
 		return r, err
 	}
 
-	route := NewRoute(s.routes)
 	handler, ok := route.Match(req)
 	var res *HttpResponse
 	if !ok {
